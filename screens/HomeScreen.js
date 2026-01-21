@@ -1,32 +1,53 @@
-import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, FlatList } from "react-native";
+import { useEffect, useState, useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+import { getTodos, createTodo } from "../services/firestore";
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen() {
+  const { user } = useContext(AuthContext);
+  const [todos, setTodos] = useState([]);
+  const [title, setTitle] = useState("");
+
+  const loadTodos = async () => {
+    const data = await getTodos(user.uid);
+    setTodos(data);
+  };
+
+  useEffect(() => {
+    loadTodos();
+  }, []);
+
+  const addTodo = async () => {
+    if (!title.trim()) return;
+    await createTodo(user.uid, title);
+    setTitle("");
+    loadTodos();
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Accueil</Text>
+    <View style={{ flex: 1, padding: 20 }}>
+      <Text style={{ fontSize: 22, marginBottom: 10 }}>Mes tâches</Text>
 
-      <Button
-        title="Aller aux détails"
-        onPress={() =>
-          navigation.navigate('Details', {
-            id: 1,
-            title: 'Première tâche',
-          })
-        }
+      <TextInput
+        placeholder="Nouvelle tâche"
+        value={title}
+        onChangeText={setTitle}
+        style={{
+          borderWidth: 1,
+          padding: 10,
+          marginBottom: 10,
+        }}
+      />
+
+      <Button title="Ajouter" onPress={addTodo} />
+
+      <FlatList
+        data={todos}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <Text style={{ padding: 10 }}>• {item.title}</Text>
+        )}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    marginBottom: 20,
-  },
-});
